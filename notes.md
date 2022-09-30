@@ -113,3 +113,83 @@ Interacting with another contract which is on the blockchain
         }
     }
     In this way, your contract can interact with any other contract on the Ethereum blockchain, as long they expose those functions as public or external.
+
+Openzeppelin ownable contract
+So the Ownable contract basically does the following:
+
+1. When a contract is created, its constructor sets the owner to msg.sender (the person who deployed it)
+
+2. It adds an onlyOwner modifier, which can restrict access to certain functions to only the owner
+
+3. It allows you to transfer the contract to a new owner
+
+Gas cost
+ Each individual operation has a gas cost based roughly on how much computing resources will be required to perform that operation (e.g. writing to storage is much more expensive than adding two integers). The total gas cost of your function is the sum of the gas costs of all its individual operations.
+
+ Normally there's no benefit to using these sub-types because Solidity reserves 256 bits of storage regardless of the uint size. For example, using uint8 instead of uint (uint256) won't save you any gas.
+
+But there's an exception to this: inside structs.
+struct NormalStruct {
+  uint a;
+  uint b;
+  uint c;
+}
+
+struct MiniMe {
+  uint32 a;
+  uint32 b;
+  uint c;
+}
+
+// `mini` will cost less gas than `normal` because of struct packing
+NormalStruct normal = NormalStruct(10, 20, 30);
+MiniMe mini = MiniMe(10, 20, 30);
+
+You'll also want to cluster identical data types together (i.e. put them next to each other in the struct) so that Solidity can minimize the required storage space. For example, a struct with fields uint c; uint32 a; uint32 b; will cost less gas than a struct with fields uint32 a; uint c; uint32 b; because the uint32 fields are clustered together.
+
+Time units
+The variable 'now' will return the current unix timestamp of the latest block (the number of seconds that have passed since January 1st 1970).
+Solidity also contains the time units seconds, minutes, hours, days, weeks and years. These will convert to a uint of the number of seconds in that length of time. So 1 minutes is 60, 1 hours is 3600 (60 seconds x 60 minutes), 1 days is 86400 (24 hours x 60 minutes x 60 seconds), etc
+
+uint lastUpdated;
+
+// Set `lastUpdated` to `now`
+function updateTimestamp() public {
+  lastUpdated = now;
+}
+
+// Will return `true` if 5 minutes have passed since `updateTimestamp` was 
+// called, `false` if 5 minutes have not passed
+function fiveMinutesHavePassed() public view returns (bool) {
+  return (now >= (lastUpdated + 5 minutes));
+}
+
+Passing structs as arguments 
+You can pass a storage pointer to a struct as an argument to a private or internal function.
+
+function _doStuff(Zombie storage _zombie) internal {
+  // do stuff with _zombie
+}
+
+NOTE: An important security practice is to examine all your public and external functions, and try to think of ways users might abuse them. Remember — unless these functions have a modifier like onlyOwner, any user can call them and pass them any data they want to.
+
+
+Note: calldata is somehow similar to memory, but it's only available to external functions.
+
+Note: If a view function is called internally from another function in the same contract that is not a view function, it will still cost gas. This is because the other function creates a transaction on Ethereum, and will still need to be verified from every node. So view functions are only free when they're called externally.
+
+In most programming languages, looping over large data sets is expensive. But in Solidity, this is way cheaper than using storage if it's in an external view function, since view functions don't cost your users any gas
+ like rebuilding an array in memory every time a function is called instead of simply saving that array in a variable for quick lookups
+
+ Declaring an array in memory
+ function getArray() external pure returns(uint[] memory) {
+  // Instantiate a new array in memory with a length of 3
+  uint[] memory values = new uint[](3);
+
+  // Put some values to it
+  values[0] = 1;
+  values[1] = 2;
+  values[2] = 3;
+
+  return values;
+}

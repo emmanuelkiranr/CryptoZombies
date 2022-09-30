@@ -1,15 +1,21 @@
 pragma solidity >=0.5.0 <0.6.0;
 
-contract ZombieFactory {
+import "./ownable.sol";
+
+contract ZombieFactory is Ownable {
 
     event NewZombie(uint zombieId, string name, uint dna);
 
     uint dnaDigits = 16;
     uint dnaModulus = 10 ** dnaDigits;
 
+    uint cooldownTime = 1 days;
+
     struct Zombie {
         string name;
         uint dna;
+        uint32 level; // Packing together to save gas in struct
+        uint32 readyTime;
     }
 
     Zombie[] public zombies;
@@ -18,6 +24,9 @@ contract ZombieFactory {
     mapping (address => uint) ownerZombieCount;
 
     function _createZombie(string memory _name, uint _dna) internal {
+        uint id = zombies.push(Zombie(_name, _dna, 1, uint32(now + cooldownTime))) - 1; 
+        // now returns uint256 by default
+        // so only after tomorrow at this time the zombie can feed again
         uint id = zombies.push(Zombie(_name, _dna)) - 1;
         zombieToOwner[id] = msg.sender;
         ownerZombieCount[msg.sender]++;
